@@ -1,0 +1,18 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000" # Expose the Flask app port
+    volumes:
+      - .:/app # Mount the current directory to /app in the container
+    environment:
+      - FLASK_ENV=development # Enable Flask development mode
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+        - action: rebuild
+          path: requirements.txt
