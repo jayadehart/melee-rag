@@ -1,26 +1,30 @@
-# Use a Python base image
-FROM python:3.9-alpine
+# Base image
+FROM python:3.10
 
-# Set the working directory
+# Set environment variables to avoid interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install required system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Poetry
+RUN pip install poetry
+
+# Set workdir
 WORKDIR /app
 
-# Install system dependencies (if needed)
-RUN apk add --no-cache gcc musl-dev libffi-dev
+# Copy project files
+COPY pyproject.toml poetry.lock ./
+RUN poetry install --without dev --no-root && rm -rf $POETRY_CACHE_DIR
 
-# Install pip-tools globally
-RUN pip install --no-cache-dir pip-tools
-
-# Copy only the requirements.in first (for caching benefits)
-COPY requirements.in .
-
-# Compile the requirements.txt
-RUN pip-compile --generate-hashes --output-file=requirements.txt requirements.in
-
-# Install dependencies from compiled requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the rest of the application files
 COPY . .
 
-# Define the command to run the application
-CMD ["python", "create_db.py"]
+# Install dependencies
+RUN poetry install --without dev --no-root
+
+# Run the application
+CMD ["poetry", "run", "python", "create_db.py"]
